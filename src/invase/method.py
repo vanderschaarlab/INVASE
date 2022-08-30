@@ -599,6 +599,13 @@ class INVASE:
         ]:
             raise RuntimeError(f"Invalid task type {task_type}")
 
+        if not hasattr(estimator, "predict_proba") and not hasattr(
+            estimator, "predict"
+        ):
+            raise RuntimeError(
+                "Invalid estimator type. Expecting predict or predict_proba methods."
+            )
+
         self.task_type = task_type
         self.feature_names = (
             feature_names if feature_names is not None else pd.DataFrame(X).columns
