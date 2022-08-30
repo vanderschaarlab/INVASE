@@ -2,7 +2,6 @@
 from typing import Tuple, Type
 
 # third party
-from lifelines.datasets import load_rossi
 import numpy as np
 import pandas as pd
 import pytest
