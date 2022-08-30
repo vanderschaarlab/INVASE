@@ -55,7 +55,7 @@ def bitmask_intervals(n: int, low: int, high: int) -> Generator:
 
 class Masking(nn.Module):
     @validate_arguments(config=dict(arbitrary_types_allowed=True))
-    def __init__(self, masking_values: torch.Tensor) -> None:
+    def __init__(self, masking_values: List) -> None:
         super(Masking, self).__init__()
         self.masking_values = masking_values
 
@@ -138,7 +138,7 @@ class invaseBase(metaclass=ABCMeta):
         ...
 
     @abstractmethod
-    def _baseline_predict(self, estimator: Any, x: torch.Tensor) -> torch.Tensor:
+    def _baseline_predict(self, estimator: Any, x: np.ndarray) -> np.ndarray:
         ...
 
     @abstractmethod
@@ -153,8 +153,8 @@ class invaseBase(metaclass=ABCMeta):
 
     @abstractmethod
     def _importance_test(
-        self, estimator: Any, x: np.ndarray, y: np.ndarray
-    ) -> np.ndarray:
+        self, estimator: Any, x: torch.Tensor, y: torch.Tensor
+    ) -> torch.Tensor:
         ...
 
     def _train(self, estimator: Any, x: np.ndarray) -> "invaseBase":
@@ -310,7 +310,7 @@ class invaseClassifier(invaseBase):
             return torch.sum((y - baseline_proba) ** 2, dim=-1)
 
     @validate_arguments(config=dict(arbitrary_types_allowed=True))
-    def _baseline_predict(self, estimator: Any, x: torch.Tensor) -> torch.Tensor:
+    def _baseline_predict(self, estimator: Any, x: np.ndarray) -> np.ndarray:
         if hasattr(estimator, "predict_proba"):
             return estimator.predict_proba(x)
         else:
@@ -328,8 +328,8 @@ class invaseClassifier(invaseBase):
 
     @validate_arguments(config=dict(arbitrary_types_allowed=True))
     def _importance_test(
-        self, estimator: Any, x: np.ndarray, y: np.ndarray
-    ) -> np.ndarray:
+        self, estimator: Any, x: torch.Tensor, y: torch.Tensor
+    ) -> torch.Tensor:
         importance = self._importance_init(x)
         n_features = x.shape[-1]
         # get baseline importance
@@ -451,7 +451,7 @@ class invaseRiskEstimation(invaseBase):
         return nn.MSELoss()(y_pred.view(y_true.shape), y_true)
 
     @validate_arguments(config=dict(arbitrary_types_allowed=True))
-    def _baseline_predict(self, estimator: Any, x: torch.Tensor) -> torch.Tensor:
+    def _baseline_predict(self, estimator: Any, x: np.ndarray) -> np.ndarray:
         return estimator.predict(x, self.eval_times)
 
     @validate_arguments(config=dict(arbitrary_types_allowed=True))
@@ -460,8 +460,8 @@ class invaseRiskEstimation(invaseBase):
 
     @validate_arguments(config=dict(arbitrary_types_allowed=True))
     def _importance_test(
-        self, estimator: Any, x: np.ndarray, y: np.ndarray
-    ) -> np.ndarray:
+        self, estimator: Any, x: torch.Tensor, y: torch.Tensor
+    ) -> torch.Tensor:
         importance = self._importance_init(x)
         n_features = x.shape[-1]
 
@@ -532,8 +532,6 @@ class invaseCV:
         n_folds: int = 5,
         seed: int = 42,
     ) -> None:
-        X = np.asarray(X)
-
         self.fold_models = []
 
         skf = KFold(n_splits=n_folds, shuffle=True, random_state=seed)
@@ -580,7 +578,7 @@ class INVASE:
         self,
         estimator: Any,
         X: pd.DataFrame,
-        y: pd.DataFrame,
+        y: pd.Series,
         time_to_event: Optional[pd.DataFrame] = None,  # for survival analysis
         eval_times: Optional[List] = None,  # for survival analysis
         feature_names: Optional[List] = None,
@@ -612,8 +610,6 @@ class INVASE:
         )
         self.n_epoch = n_epoch
 
-        super().__init__(self.feature_names)
-
         model = copy.deepcopy(estimator)
 
         self.explainer: Union[invaseCV, invaseClassifier, invaseRiskEstimation]
@@ -627,7 +623,7 @@ class INVASE:
             else:
                 self.explainer = invaseCV(
                     model,
-                    X,
+                    np.asarray(X),
                     n_epoch=n_epoch,
                     n_folds=n_folds,
                     n_epoch_inner=n_epoch_inner,
@@ -653,14 +649,15 @@ class INVASE:
             )
 
     @validate_arguments(config=dict(arbitrary_types_allowed=True))
-    def explain(self, X: pd.DataFrame) -> np.ndarray:
-        result = self.explainer.explain(X)
+    def explain(self, X: pd.DataFrame) -> pd.DataFrame:
+        result = self.explainer.explain(np.asarray(X))
 
-        return np.asarray(result)
+        return pd.DataFrame(result, columns=self.feature_names)
 
     @validate_arguments(config=dict(arbitrary_types_allowed=True))
-    def plot(self, values: pd.DataFrame) -> None:  # type: ignore
-        values = pd.DataFrame(values, columns=self.feature_names)
+    def plot(self, X: pd.DataFrame) -> None:  # type: ignore
+        values = self.explain(X)
+
         plt.figure(figsize=(20, 6))
         sns.heatmap(values).set_title("invase")
 
