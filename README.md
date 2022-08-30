@@ -67,11 +67,13 @@ pytest -vsx
 
 ## Citing
 If you use this code, please cite the associated paper:
+```
 @inproceedings{
-yoon2018invase,
-title={{INVASE}: Instance-wise Variable Selection using Neural Networks},
-author={Jinsung Yoon and James Jordon and Mihaela van der Schaar},
-booktitle={International Conference on Learning Representations},
-year={2019},
-url={https://openreview.net/forum?id=BJg_roAcK7},
+    yoon2018invase,
+    title={{INVASE}: Instance-wise Variable Selection using Neural Networks},
+    author={Jinsung Yoon and James Jordon and Mihaela van der Schaar},
+    booktitle={International Conference on Learning Representations},
+    year={2019},
+    url={https://openreview.net/forum?id=BJg_roAcK7},
 }
+```
