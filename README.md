@@ -13,6 +13,8 @@ Authors: Jinsung Yoon, James Jordon, Mihaela van der Schaar
 
 Paper: Jinsung Yoon, James Jordon, Mihaela van der Schaar, "IINVASE: Instance-wise Variable Selection using Neural Networks," International Conference on Learning Representations (ICLR), 2019. (https://openreview.net/forum?id=BJg_roAcK7)
 
+## :rocket: Installation
+
 The library can be installed from PyPI using
 ```bash
 $ pip install invase
